@@ -59,7 +59,7 @@ qemu_loc=https://dugoh.github.io/oldqemu/qemu.tar.bz2
 (
 check checking wget;                   wget --help                                      >/dev/null 2>&1 && ok || nok
 check checking ncurses;                ls -l /usr/include/ncurses.h                     >/dev/null 2>&1 && ok || nok
-check fetching version a;              wget -r -np -nd "${ver_b_loc}"  #                 >/dev/null 2>&1 && ok || nok
+check fetching version a;              wget -r -np -nd "${ver_b_loc}"                   >/dev/null 2>&1 && ok || nok
 check extract disk;                    cat qdisk.part-aa qdisk.part-ab qdisk.part-ac \
                                          |bunzip2 >qdisk.img                                            && ok || nok
 check fetching qemu;                   sudo -i wget "${qemu_loc}"                       >/dev/null 2>&1 && ok || nok
@@ -127,7 +127,7 @@ touch out
                 -startdate "1994-04-23"'  \
  |tee -a out                              \
  |tr -cd 'c'                              \
- |fold -w 120
+ |fold -w 180
 mv out out_7.txt
 ###########################################################
 
