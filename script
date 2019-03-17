@@ -1,0 +1,152 @@
+function check {
+  echo -ne "$*\t"
+}
+
+function ok {
+  echo -e "[ \e[38;5;32msuccess\e[0m ]"
+}
+
+function nok {
+  echo -e "[ \e[38;5;31mfailure\e[0m ]"
+}
+
+function warn {
+  echo -e "[ \e[38;5;33mwarning\e[0m ]"
+}
+
+function format {
+  awk -F'\t' '{ printf "%-60s %s\n",$1,$2 }'
+}
+
+function slowcat {
+[[ -z "${3}" ]] && echo usage: $0 file chunksize waittime && return 1
+  local c=0
+  local b=$(wc -c <${1})
+    while [ ${c} -lt ${b} ]; do
+    dd if=${1} bs=1 count=${2} skip=${c} 2>/dev/null
+    (( c = c + ${2} ))
+    sleep ${3}
+  done
+}
+
+function index {
+  echo "<HTML><HEAD><TITLE>LINKS</TITLE></HEAD><BODY><ul>" >index.html
+  for file in $(ls|grep -v index.html); do \
+    (\
+      printf '<li><a href="' ; \
+      printf "${file}" ; \
+      printf '">' ; \
+      printf "${file}" ; \
+      printf '</a></li>\n' \
+    ) >>index.html ; \
+  done
+  echo "</ul></BODY></HTML>" >>index.html
+}
+
+function push {
+  git init
+  git config user.name "${USER}"
+  git config user.email "${GHP_MAIL}"
+  git add .
+  git commit -m "Deploy to GitHub Pages"
+  git push --force --quiet https://${GHP_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git master:gh-pages
+}
+
+wd=$(pwd)
+ver_b_loc=https://dugoh.github.io/386bsd0.1-b/
+qemu_loc=https://dugoh.github.io/oldqemu/qemu.tar.bz2
+
+(
+check checking wget;                   wget --help                                      >/dev/null 2>&1 && ok || nok
+check checking ncurses;                ls -l /usr/include/ncurses.h                     >/dev/null 2>&1 && ok || nok
+check fetching version a;              wget -r -np -nd "${ver_b_loc}"  #                 >/dev/null 2>&1 && ok || nok
+check extract disk;                    cat qdisk.part-aa qdisk.part-ab qdisk.part-ac \
+                                         |bunzip2 >qdisk.img                                            && ok || nok
+check fetching qemu;                   sudo -i wget "${qemu_loc}"                       >/dev/null 2>&1 && ok || nok
+check extract qemu;                    sudo -i -- bash -c \
+                                         'bunzip2 -c qemu.tar.bz2 | tar -xvf -'         >/dev/null 2>&1 && ok || nok
+check installing qemu;                 sudo -i -- bash -c 'cd qemu; make install'       >/dev/null 2>&1 && ok || nok
+check setting qemu capabilities;       sudo setcap                                      \
+                                         CAP_NET_ADMIN,CAP_NET_RAW=eip                  \
+                                         /usr/local/bin/qemu                            >/dev/null 2>&1 && ok || nok
+)|format
+
+cat >6 <<"__EOF6__"
+root
+
+exec sh
+sed -e 's/pk023.tar/pk023024.tar/' to_pk023.sh >/to_pk024.sh
+chmod +x /to_pk024.sh
+/to_pk024.sh
+__EOF6__
+
+# sixth boot ##############################################
+touch out
+(
+  until egrep -q 'login:|console' out ; do
+    sleep 5;
+  done
+  sleep 5
+  slowcat ./6 1 .5
+)| TERM=vt100 script -f -c 'qemu          \
+                -L /usr/local/share/qemu/ \
+                -curses                   \
+                -hda qdisk.img            \
+                -M isapc                  \
+                -net nic                  \
+                -no-reboot                \
+                -m 64                     \
+                -startdate "1994-04-22"'  \
+ |tee -a out                              \
+mv out out_6.txt
+###########################################################
+
+cat >7 <<"__EOF7__"
+root
+
+exec sh
+/buildworld_pk023.sh
+__EOF7__
+
+# seventh boot ##############################################
+touch out
+(
+  until egrep -q 'login:|console' out ; do
+    sleep 5;
+  done
+  sleep 5
+  slowcat ./7 1 .5
+)| TERM=vt100 script -f -c 'qemu          \
+                -L /usr/local/share/qemu/ \
+                -curses                   \
+                -hda qdisk.img            \
+                -M isapc                  \
+                -net nic                  \
+                -no-reboot                \
+                -m 64                     \
+                -startdate "1994-04-23"'  \
+ |tee -a out                              \
+ |tr -cd 'c'                              \
+ |fold -w 120
+mv out out_7.txt
+###########################################################
+
+echo;echo ====;echo;echo
+fold out_7.txt|head -150
+echo;echo ====;echo;echo
+fold out_7.txt|tail -150
+echo;echo ====;echo;echo
+
+(
+check creating gh-pages;              mkdir gh-pages ; cd gh-pages                      >/dev/null 2>&1 && ok || nok
+check add the hard disk;              mv ../qdisk.img ./                                >/dev/null 2>&1 && ok || nok
+check compress the disk;              bzip2 --best qdisk.img                            >/dev/null 2>&1 && ok || nok
+check split the disk in parts;        split -b 50m "qdisk.img.bz2" "qdisk.part-"        >/dev/null 2>&1 && ok || nok
+check remove the unsplit disk;        rm qdisk.img.bz2                                  >/dev/null 2>&1 && ok || nok
+check add the floppy disk;            mv ../boot.img ./                                 >/dev/null 2>&1 && ok || nok
+check add the bochs config;           mv ../bochsrc ./                                  >/dev/null 2>&1 && ok || nok
+check add the TUN config;             mv ../tunconfig ./                                >/dev/null 2>&1 && ok || nok
+check add the screen output;          mv ../out_* ./                                    >/dev/null 2>&1 && ok || nok
+check create an index page;           index                                             >/dev/null 2>&1 && ok || nok
+check push to gh-pages;               push                                              >/dev/null 2>&1 && ok || nok
+)|format
