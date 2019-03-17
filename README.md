@@ -24,7 +24,7 @@ qemu -L /usr/local/share/qemu/ \
      -net nic                  \
      -no-reboot                \
      -m 64                     \
-     -startdate "1994-04-22"'
+     -startdate "1994-04-22"
 ```
 
 # Warning
