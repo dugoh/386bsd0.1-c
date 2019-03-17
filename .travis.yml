@@ -1,0 +1,11 @@
+sudo: required
+dist: trusty
+addons:
+  apt:
+    packages:
+    - libncurses5-dev
+language: bash
+
+script:
+  - chmod +x ./script
+  - ./script
