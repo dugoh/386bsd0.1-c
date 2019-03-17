@@ -75,7 +75,7 @@ cat >6 <<"__EOF6__"
 root
 
 exec sh
-sed -e 's/pk023.tar/pk023024.tar/' to_pk023.sh >/to_pk024.sh
+sed -e 's/pk023.tar/pk023024.tar/' /to_pk023.sh >/to_pk024.sh
 chmod +x /to_pk024.sh
 /to_pk024.sh
 __EOF6__
