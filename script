@@ -126,7 +126,7 @@ touch out
                 -m 64                     \
                 -startdate "1994-04-23"'  \
  |tee -a out                              \
- |tr -cd 'c'                              \
+ |tr -cd 'x'                              \
  |fold -w 180
 mv out out_7.txt
 ###########################################################
