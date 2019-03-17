@@ -8,7 +8,7 @@ All artifacts are pushed to https://dugoh.github.io/386bsd0.1-c/. The disk is bz
 
 ```
 for i in a b c; do \
-  wget -O - https://dugoh.github.io/386bsd0.1-b/qdisk.part-a${i};\
+  wget -O - https://dugoh.github.io/386bsd0.1-c/qdisk.part-a${i};\
 done|bunzip2 >qdisk.img
 ```
 
